@@ -29,6 +29,7 @@ from amazon_transcribe.model import (
     AudioStream,
     StartStreamTranscriptionRequest,
     StartStreamTranscriptionEventStream,
+    StartMedicalStreamTranscriptionRequest
 )
 from amazon_transcribe.serialize import (
     AudioEventSerializer,
