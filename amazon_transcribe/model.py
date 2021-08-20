@@ -233,6 +233,17 @@ class StartStreamTranscriptionRequest:
         self.number_of_channels: Optional[int] = number_of_channels
 
 
+class StartMedicalStreamTranscriptionRequest(StartStreamTranscriptionRequest):
+    def __init__(self, *args, **kwargs):
+        audio_type = kwargs.pop("audio_type")
+        specialty = kwargs.pop("specialty")
+
+        super().__init__(*args, **kwargs)
+
+        self.audio_type = audio_type
+        self.specialty = specialty
+
+
 class StartStreamTranscriptionResponse:
     """Transcription Response
 

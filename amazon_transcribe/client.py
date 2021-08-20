@@ -178,6 +178,82 @@ class TranscribeStreamingClient:
         audio_stream = self._create_audio_stream(signed_request)
         return StartStreamTranscriptionEventStream(audio_stream, parsed_response)
 
+
+class TranscribeMedicalStreamingClient(TranscribeStreamingClient):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._serializer = TranscribeMedicalStreamingSerializer()
+
+    async def start_stream_transcription(
+        self,
+        *,
+        language_code: str,
+        media_sample_rate_hz: int,
+        media_encoding: str,
+        audio_type: str,
+        specialty: str,
+        vocabulary_name: Optional[str] = None,
+        session_id: Optional[str] = None,
+        vocab_filter_method: Optional[str] = None,
+        vocab_filter_name: Optional[str] = None,
+        show_speaker_label: Optional[bool] = None,
+        enable_channel_identification: Optional[bool] = None,
+        number_of_channels: Optional[int] = None,
+    ) -> StartStreamTranscriptionEventStream:
+        transcribe_streaming_request = StartMedicalStreamTranscriptionRequest(
+            language_code,
+            media_sample_rate_hz,
+            media_encoding,
+            vocabulary_name,
+            session_id,
+            vocab_filter_method,
+            vocab_filter_name,
+            show_speaker_label,
+            enable_channel_identification,
+            number_of_channels,
+            audio_type=audio_type,
+            specialty=specialty,
+        )
+        endpoint = await self._endpoint_resolver.resolve(self.region)
+
+        ## super
+        request = self._serializer.serialize_start_stream_transcription_request(
+            endpoint=endpoint, request_shape=transcribe_streaming_request,
+        ).prepare()
+
+        creds = await self._credential_resolver.get_credentials()
+        signer = SigV4RequestSigner("transcribe", self.region)
+        signed_request = signer.sign(request, creds)
+
+        session = AwsCrtHttpSessionManager(self._eventloop)
+
+        response = await session.make_request(
+            signed_request.uri,
+            method=signed_request.method,
+            headers=signed_request.headers.as_list(),
+            body=signed_request.body,
+        )
+        resolved_response = await response.resolve_response()
+
+        status_code = resolved_response.status_code
+        if status_code >= 400:
+            # We need to close before we can consume the body or this will hang
+            signed_request.body.close()
+            body_bytes = await response.consume_body()
+            raise self._response_parser.parse_exception(resolved_response, body_bytes)
+        elif status_code != 200:
+            raise RuntimeError("Unexpected status code encountered: %s" % status_code)
+
+        parsed_response = self._response_parser.parse_start_stream_transcription_response(
+            resolved_response,
+            response,
+        )
+
+        # The audio stream is returned as output because it requires
+        # the signature from the initial HTTP request to be useable
+        audio_stream = self._create_audio_stream(signed_request)
+        return StartStreamTranscriptionEventStream(audio_stream, parsed_response)
+
     def _create_audio_stream(self, signed_request):
         initial_signature = self._extract_signature(signed_request)
         return AudioStream(

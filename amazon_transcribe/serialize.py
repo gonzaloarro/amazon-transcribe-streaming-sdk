@@ -119,6 +119,33 @@ class TranscribeStreamingSerializer:
         return request
 
 
+class TranscribeMedicalStreamingSerializer(TranscribeStreamingSerializer):
+    def __init__(self):
+        super().__init__()
+
+        self.request_uri = "/medical-stream-transcription"
+
+    def serialize_start_stream_transcription_request(
+        self, endpoint: str, request_shape: StartStreamTranscriptionRequest
+    ) -> Request:
+        request = super().serialize_start_stream_transcription_request(endpoint, request_shape)
+        request.path = self.request_uri
+
+        request.headers.update(
+            super()._serialize_str_header(
+                "specialty", request_shape.specialty
+            )
+        )
+        
+        request.headers.update(
+            super()._serialize_str_header(
+                "type", request_shape.audio_type
+            )
+        )
+
+        return request
+
+
 SERIALIZED_EVENT = Tuple[Dict, bytes]
 
 
