@@ -33,6 +33,7 @@ from amazon_transcribe.model import (
 from amazon_transcribe.serialize import (
     AudioEventSerializer,
     TranscribeStreamingSerializer,
+    TranscribeMedicalStreamingSerializer
 )
 from amazon_transcribe.deserialize import TranscribeStreamingResponseParser
 from amazon_transcribe.signer import SigV4RequestSigner

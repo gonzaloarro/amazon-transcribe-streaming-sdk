@@ -22,6 +22,7 @@ from amazon_transcribe.model import (
     AudioEvent,
     StartStreamTranscriptionRequest,
     BaseEvent,
+    StartMedicalStreamTranscriptionRequest
 )
 
 
