@@ -180,6 +180,22 @@ class TranscribeStreamingClient:
         audio_stream = self._create_audio_stream(signed_request)
         return StartStreamTranscriptionEventStream(audio_stream, parsed_response)
 
+    def _create_audio_stream(self, signed_request):
+    initial_signature = self._extract_signature(signed_request)
+    return AudioStream(
+        input_stream=signed_request.body,
+        event_serializer=AudioEventSerializer(),
+        eventstream_serializer=EventStreamMessageSerializer(),
+        event_signer=self._event_signer,
+        initial_signature=initial_signature,
+        credential_resolver=self._credential_resolver,
+    )
+
+    def _extract_signature(self, signed_request):
+        auth = signed_request.headers.get("Authorization", "")
+        auth = re.split("Signature=", auth)[-1]
+        return unhexlify(auth)
+
 
 class TranscribeMedicalStreamingClient(TranscribeStreamingClient):
     def __init__(self, *args, **kwargs):
@@ -255,19 +271,3 @@ class TranscribeMedicalStreamingClient(TranscribeStreamingClient):
         # the signature from the initial HTTP request to be useable
         audio_stream = self._create_audio_stream(signed_request)
         return StartStreamTranscriptionEventStream(audio_stream, parsed_response)
-
-    def _create_audio_stream(self, signed_request):
-        initial_signature = self._extract_signature(signed_request)
-        return AudioStream(
-            input_stream=signed_request.body,
-            event_serializer=AudioEventSerializer(),
-            eventstream_serializer=EventStreamMessageSerializer(),
-            event_signer=self._event_signer,
-            initial_signature=initial_signature,
-            credential_resolver=self._credential_resolver,
-        )
-
-    def _extract_signature(self, signed_request):
-        auth = signed_request.headers.get("Authorization", "")
-        auth = re.split("Signature=", auth)[-1]
-        return unhexlify(auth)
